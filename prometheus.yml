@@ -18,9 +18,9 @@ spec:
     app: prometheus
   ports:
   - name: prometheus
-    port: 9091
+    port: 9090
     protocol: TCP
-    targetPort: 9091
+    targetPort: 9090
     nodePort: 30090
 ---
 apiVersion: extensions/v1beta1
@@ -39,15 +39,12 @@ spec:
         - name: prometheus
           image: functions/prometheus:2.2.0-armhf
           #image: prom/prometheus:v2.2.1
-          command: ["sh", "-c"]
-          args:
-          - |
-            prometheus --config.file=/etc/prometheus/prometheus.yml
-            #- '--web.listen-address="0.0.0.0:9091"'
-            tail -f /dev/null
+          command:
+                - 'prometheus'
+                - '--config.file=/etc/prometheus/prometheus.yml'
           #imagePullPolicy: Always
           Ports:
-            - containerPort: 9091
+            - containerPort: 9090
               protocol: TCP
           volumeMounts:
             - mountPath: /etc/prometheus/prometheus.yml
@@ -92,3 +89,4 @@ data:
       static_configs:
       - targets:
         - localhost:9090
+        # check-comment
