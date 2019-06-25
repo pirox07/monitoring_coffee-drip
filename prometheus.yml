@@ -39,19 +39,13 @@ spec:
         - name: prometheus
           image: functions/prometheus:2.2.0-armhf
           #image: prom/prometheus:v2.2.1
-          command:
-            - 'prometheus'
-            - '--config.file=/etc/prometheus/prometheus.yml'
-          command:
-            - sh
-            - '-c'
-            - "tail -f /dev/null"
-          #  - '--web.listen-address="0.0.0.0:9091"'
-          imagePullPolicy: Always
-          #command:
-          #- sh
-          #- '-c'
-          #- "tail -f /dev/null"
+          command: ["sh", "-c"]
+          args:
+          - |
+            prometheus --config.file=/etc/prometheus/prometheus.yml
+            #- '--web.listen-address="0.0.0.0:9091"'
+            tail -f /dev/null
+          #imagePullPolicy: Always
           Ports:
             - containerPort: 9091
               protocol: TCP
@@ -73,7 +67,7 @@ spec:
             items:
               - key: prometheus.yml
                 path: prometheus.yml
-                mode: 0766
+                mode: 0644
         #- name: config-volume
         #  configMap:
         #    name: prometheus-config
