@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: coffee
+  labels:
+    name: coffee
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: coffee
+  labels:
+    app: prometheus
+spec:
+  type: NodePort
+  selector:
+    app: prometheus
+  ports:
+  - name: prometheus
+    port: 9091
+    protocol: TCP
+    targetPort: 9091
+    nodePort: 30090
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: coffee
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: functions/prometheus:2.2.0-armhf
+          #image: prom/prometheus:v2.2.1
+          command:
+            - 'prometheus'
+            - '--config.file=/etc/prometheus/prometheus.yml'
+          command:
+            - sh
+            - '-c'
+            - "tail -f /dev/null"
+          #  - '--web.listen-address="0.0.0.0:9091"'
+          imagePullPolicy: Always
+          #command:
+          #- sh
+          #- '-c'
+          #- "tail -f /dev/null"
+          Ports:
+            - containerPort: 9091
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/prometheus/prometheus.yml
+              name: prometheus-config
+              subPath: prometheus.yml
+          #- name: config-volume
+          #  mountPath: /mnt/etc/
+          #- name: data-volume
+          #  mountPath: mnt/data/
+          #  - mountPath: /etc/prometheu/prometheus.yml
+          #    name: prometheus-config
+          #    subPath: prometheus.yml
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
+                mode: 0766
+        #- name: config-volume
+        #  configMap:
+        #    name: prometheus-config
+        #- name: data-volume
+        #  emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: prometheus
+  name: prometheus-config
+  namespace: coffee
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval:     15s
+      evaluation_interval: 15s
+    scrape_configs:
+    - job_name: 'prometheus'
+      scrape_interval: 5s
+      static_configs:
+      - targets:
+        - localhost:9090
