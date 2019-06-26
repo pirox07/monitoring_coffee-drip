@@ -31,6 +31,8 @@ spec:
       containers:
         - name: fluentd
           image: pirox/custom-fluent-plugin-prometheus-armhf:v0.1
+          #command:
+          #      - 'mkdir -p /fluentd/log/log.receive'
           Ports:
             - containerPort: 9091
               protocol: TCP
@@ -38,11 +40,10 @@ spec:
             - mountPath: /fluentd/etc/fluent.conf
               name: fluentd-config
               subPath: fluent.conf
-          #- name: data-volume
-          #  mountPath: mnt/data/
-          #  - mountPath: ...
-          #    name: ...
-          #    subPath: ...
+            - name: fluentd-log-recieve
+              mountPath: /fluentd/log/log.recieve
+            - name: fluentd-log-sent
+              mountPath: /fluentd/log
       volumes:
         - name: fluentd-config
           configMap:
@@ -51,6 +52,14 @@ spec:
               - key: fluent.conf
                 path: fluent.conf
                 mode: 0744
+        - name: fluentd-log-recieve
+          hostPath:
+            path: /var/fluentd/log.recieve
+            type: Directory
+        - name: fluentd-log-sent
+          hostPath:
+            path: /var/fluentd
+            type: Directory
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -64,11 +73,10 @@ data:
     <source>
       @type tail
       format none
-      # ボリューム機能でマウント
-      path /var/*.log
-      tag *
+      path /fluentd/log/log.receive/*.log
+      tag coffee.drip
     </source>
-    <match example>
+    <match log.**>
       @type file
       path /fluentd/log/log.sent
     </match>
