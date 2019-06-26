@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluentd
+  namespace: coffee
+  labels:
+    app: fluentd
+spec:
+  type: NodePort
+  selector:
+    app: fluentd
+  ports:
+  - name: fluentd
+    port: 9091
+    protocol: TCP
+    targetPort: 9091
+    nodePort: 30091
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fluentd
+  namespace: coffee
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      containers:
+        - name: fluentd
+          image: pirox/custom-fluent-plugin-prometheus-armhf:v0.1
+          Ports:
+            - containerPort: 9091
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /fluentd/etc/fluent.conf
+              name: fluentd-config
+              subPath: fluent.conf
+          #- name: data-volume
+          #  mountPath: mnt/data/
+          #  - mountPath: ...
+          #    name: ...
+          #    subPath: ...
+      volumes:
+        - name: fluentd-config
+          configMap:
+            name: fluentd-config
+            items:
+              - key: fluent.conf
+                path: fluent.conf
+                mode: 0744
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: fluentd
+  name: fluentd-config
+  namespace: coffee
+data:
+  fluent.conf: |
+    <source>
+      @type tail
+      format none
+      # ボリューム機能でマウント
+      path /var/*.log
+      tag *
+    </source>
+    <match example>
+      @type file
+      path /fluentd/log/log.sent
+    </match>
